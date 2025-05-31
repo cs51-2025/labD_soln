@@ -1,24 +1,24 @@
 (* 
                               CS51 Lab D
                       Improving Debugging Skills
-                         Sample Testing File
+                        Sample Testing File 2
 
-This file contains a partial set of tests for the Lab D functions,
-using the `unit_test` function provided in the `Absbook` module. (See
-<https://github.com/cs51/utils/blob/main/lib/absbook.ml>.)
+This file contains a partial set of tests for the Lab D functions in
+Part 2, using the `unit_test` function provided in the `Absbook`
+module. (See <https://github.com/cs51/utils/blob/main/lib/absbook.ml>.)
  
  *)
 (*
                                SOLUTION
  *)
-   
+
 open Printf
 open CS51Utils.Absbook
 open LabD
 open LabD_examples
                
-let tests () =
-
+let part2tests () =
+  
   (* testing `is_sorted` *)
   printf "\nTesting is_sorted\n" ;
   unit_test (is_sorted []) "is_sorted: empty";
@@ -137,4 +137,5 @@ let tests () =
   
   printf "\nTests completed\n" ;;
             
-let _ = tests ()
+let _ =
+  part2tests () ;;

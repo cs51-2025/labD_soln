@@ -7,18 +7,10 @@
  *)
 
 (* Objective: In this lab, you'll improve your debugging skills by
-applying fundamental debugging ideas to debugging an implementation of
-set operations (union, intersection, etc.).
+applying fundamental debugging ideas to improving code.
 
-        ****************************************************************
-        In this lab, sets of integers will be represented as `int
-        list`s whose elements are in sorted order with no
-        duplicates. All functions can assume this invariant and should
-        deliver results satisfying it as well.
-        ****************************************************************
-
-In the code that follows, some functions may have bugs, so that their
-behavior may not match the intended behavior described in the
+In the exercises that follow, some functions may have bugs, so that
+their behavior may not match the intended behavior described in the
 comments. Your job is to find and fix all of the bugs.
 
 ========================================================================
@@ -59,7 +51,7 @@ some of the major aspects of the debugging process.
 
         When confronted with an error exhibited on a large instance,
         try to simplify it to find the minimal example that exhibits
-        the problem. 
+        the problem.
 
     Reproduction 
 
@@ -85,27 +77,148 @@ some of the major aspects of the debugging process.
     Maintenance
 
         Code that was once working can become buggy as changes are
-        mode either to the code itself or to code that is uses. It's
+        made either to the code itself or to code that it uses. It's
         thus helpful to retest code when changes are made to it or its
         environment. Fortunately, unit test files are ideal for this
         process. Rerunning the unit tests liberally allows us to
         verify that working code hasn't regressed to a buggy state.
-        (The process is referred to in the literature as "regrsssion
+        (The process is referred to in the literature as "regression
         testing" for this reason. See
         <https://en.wikipedia.org/wiki/Regression_testing>.)
 
+ *)
+
+(*======================================================================
+Part 1: Some finger exercises in debugging
+
+In this part, we'll provide implementations of a few simple
+functions. These functions may or may not have bugs in them. You'll
+proceed through four steps:
+
+ 1. Read the fnction definition, including the top-level comment, to
+    give you an idea of what the function is intended to do.
+
+ 2. Write a full set of unit tests for each of the functions in the
+    file `part1_tests.ml`. The comments introducing each function may
+    give information about the intended behavior of each function.
+
+ 3. Once you've written all of the unit tests, compile and run the
+    unit tests
+
+      % ocamlbuild -use-ocamlfind part1tests.byte
+      % ./part1tests.byte
+
+ 4. For each of the functions, find a value for the function's
+    argument that expresses the bug, if there is one. (If you've built
+    your unit tests well, they should uncover such a value directly.)
+    Record the bug-inducing value by let-defining the corresponding
+    `-bug` value to be `Some v` where `v` is the bug-inducing value if
+    there is one, or `None` if the function is not buggy.
+
+ 5. Revise each function to eliminate any bugs that you found. While
+    you're at it, you should probably deal with any warnings that
+    arise as well.
+
+We've done the first of these exercises, the `abs` function, for you
+to give you the idea.
+
+    1. ORIGINAL VERSION
+
+    (* abs x -- Returns the absolute value of the integer `x` *)
+    let abs x =
+      if x < ~-1 then ~- x else x
+
+    2. UNIT TESTS (These would be added to `part1tests.ml`.)
+
+    unit_test (abs 0 = 0) "abs zero";
+    unit_test (abs 1 = 1) "abs one";
+    unit_test (abs max_int = max_int) "abs maxint";
+    unit_test (abs min_int = min_int) "abs minint";
+    unit_test (abs (-0) = 0) "abs zero";
+    unit_test (abs (-1) = 1) "abs neg one";
+    unit_test (abs (-max_int) = max_int) "abs neg maxint";
+    unit_test (abs (-min_int) = min_int) "abs neg minint";
+
+    3. COMPILE AND RUN
+
+    % ocamlbuild -use-ocamlfind part1tests.byte
+    % ./part1tests.byte
+    ...
+    abs zero passed
+    abs one passed
+    abs maxint passed
+    abs minint passed
+    abs zero passed
+    abs neg one FAILED       <-- This'll be helpful!
+    abs neg maxint passed
+    abs neg minint passed
+    ...
+    - : unit = ()
+
+    3. BUGGY VALUE
+
+    let abs_bug = -1
+
+    4. REVISED VERSION
+
+    (* abs x -- Returns the absolute value of the integer `x` *)
+    let abs x =
+      if x < 0 then ~- x else x
+ *)
+
+(*......................................................................*)
+(* last_element lst -- Returns the last element of `lst` as an option;
+   `None` if there is no last element *)
+let rec last_element lst =
+  match lst with
+  | [] -> None
+  | [x] -> Some x
+  | _ :: tail -> last_element tail
+    
+let last_element_bug = Some [1; 2]
+
+(*......................................................................*)
+(* sum_to_n n -- Returns the sum of integers from 1 to `n` *)
+let rec sum_to_n n =
+  if n = 0 then n
+  else n + sum_to_n (n - 1)
+
+let sum_to_n_bug = None
+
+(*......................................................................*)
+let describe_list lst =
+  match lst with
+  | [] -> "Empty list"
+  | [_x] -> "Singleton list"
+  | _ :: _ -> "Multiple list"
+
+let describe_list_bug = Some [1]
+
+(*======================================================================
+Part 2: Debugging set operations
+
+In this part, you will apply your debugging skills to debugging an
+implementation of set operations (union, intersection, etc.).
+
+    ****************************************************************
+    In this lab, sets of integers will be represented as `int list`s
+    whose elements are in *sorted order* with *no duplicates*. All
+    functions can assume this invariant and should deliver results
+    satisfying it as well.
+    ****************************************************************
+
 To get you started on debugging, we've placed a few unit tests for
-some of the functions in the file `labD_tests.ml`. Compile and run
+some of the functions in the file `part2_tests.ml`. Compile and run
 these tests to see how the functions are working so far.
 
-    % ocamlbuild -use-ocamlfind labD_tests.byte
-    % ./labD_tests.byte
+    % ocamlbuild -use-ocamlfind part2_tests.byte
+    % ./part2_tests.byte
 
 What do you notice? Does this give you an idea on where to start
 debugging?
 
 ========================================================================
-Part 1: Some utilities for checking the sorting and no-duplicates
+Part 2A: Some utilities for checking the sorting and no-duplicates
 conditions.
  *)
        
@@ -149,7 +262,7 @@ let rec dups_sorted (lst : 'a list) : int =
       - : int = 1
 
    First off, we'll definitely want to add some tests like these to
-   `labD_tests.ml` to aid our testing down the road.
+   `part2_tests.ml` to aid our testing down the road.
 
    Returning to our simplest case,
 
@@ -246,20 +359,18 @@ let rec dups_sorted (lst : 'a list) : int =
 let is_set (lst : 'a list) : bool =
   is_sorted lst && dups_sorted lst = 0 ;;
 
-         
 (*======================================================================
-Part 2: Set operations -- member, union, and intersection
+Part 2B: Set operations -- member, union, and intersection
 
 Below we provide code for computing membership, intersections, and
 unions of sets represented by lists with the stated invariant. 
 
-Check out the unit tests for these in `labD_tests.ml`. Augment the
+Check out the unit tests for these in `part2_tests.ml`. Augment the
 tests until you're satisfied that you've fully tested these functions,
 making any needed changes as you go.
 
 We'll test them further on larger examples in the next part, Part
-3.
- *)
+2C. *)
 
 (* member elt set -- Returns `true` if and only if `elt` is an element
    of `set` (represented as above). Search can stop early based on
@@ -324,10 +435,10 @@ let rec intersection s1 s2 =
  *)
 
 (*======================================================================
-Part 3: Scaling up the testing
+Part 2C: Scaling up the testing
 
 The file `labD_examples` contains a couple of larger examples of sets
-represented as lists (`example1` and `example2`). The `labD_tests.ml`
+represented as lists (`example1` and `example2`). The `part2_tests.ml`
 file contains a few tests based on these larger examples, which are
 commented out at the moment. Uncomment them now and rerun the unit
 tests. What do you notice?
@@ -375,7 +486,7 @@ problems, wherever they might be.
       order items at first glance. But eyeballing such a large data
       structure isn't ideal. Computers can do the checking better than
       humans. In fact, we have a function to check for us. Let's add
-      unit tests to `labD_tests.ml` that verify that the two examples 
+      unit tests to `part2_tests.ml` that verify that the two examples 
       are in fact invariant-obeying sets:
 
          # is_set example1 ;;
